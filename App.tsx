@@ -1,116 +1,205 @@
 import React, { useState } from 'react';
 import {
+  SafeAreaView,
   View,
   Text,
   TextInput,
-  Button,
-  FlatList,
   TouchableOpacity,
+  FlatList,
   StyleSheet,
 } from 'react-native';
-import { useTaskStore } from './store';
-
-export default function App() {
-  const [text, setText] = useState('');
-  const { tasks, addTask, deleteTask, toggleTask } = useTaskStore();
-
-  return (
-    <View style={styles.container}>
-      <Text style={styles.title}>📝 என் TODO LIST</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="பணியை எழுதவும்"
-        value={text}
-        onChangeText={setText}
-      />
-      <Button title="சேர்" onPress={() => { addTask(text); setText(''); }} />
-
-      <FlatList
-        data={tasks}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            onPress={() => toggleTask(item.id)}
-            onLongPress={() => deleteTask(item.id)}
-          >
-            <Text style={[
-              styles.task,
-              { textDecorationLine: item.completed ? 'line-through' : 'none' }
-            ]}>
-              {item.text}
-            </Text>
-          </TouchableOpacity>
-        )}
-      />
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20 },
-  title: { fontSize: 24, fontWeight: 'bold', marginBottom: 10 },
-  input: { borderWidth: 1, padding: 10, marginBottom: 10 },
-  task: { fontSize: 18, marginVertical: 5 },
-});
-
-
-import React, { useEffect, useState } from 'react';
-import { SafeAreaView, TextInput, FlatList, Text, View, Button, StyleSheet, TouchableOpacity } from 'react-native';
-import { useTaskStore } from './src/store/store';
+import { useTodoStore } from './src/store';
+import { Share } from 'react-native';
 
 const App = () => {
-  const { tasks, addTask, deleteTask, toggleTask, loadTasks } = useTaskStore();
-  const [text, setText] = useState('');
+  const [task, setTask] = useState('');
+  const { todos, addTodo, removeTodo, toggleTodo } = useTodoStore();
 
-  useEffect(() => {
-    loadTasks(); // App start ஆகும் போது AsyncStorage-ல இருந்து tasks load பண்ணும்
-  }, []);
+  const handleAdd = () => {
+    if (task.trim()) {
+      addTodo(task);
+      setTask('');
+    }
+  };
 
+  
+
+  const onShare = async (taskText: string) => {
+    try {
+      await Share.share({
+        message: `Task: ${taskText}`,
+      });
+    } catch (error) {
+      console.error('Error sharing task:', error);
+    }
+  };
+  
+  const renderItem = ({ item }: any) => (
+    <View style={styles.taskContainer}>
+      <TouchableOpacity onPress={() => toggleTodo(item.id)}>
+        <Text
+          style={[
+            styles.taskText,
+            item.completed && styles.completed,
+          ]}
+        >
+          {item.title}
+        </Text>
+      </TouchableOpacity>
+  
+      <View style={{ flexDirection: 'row' }}>
+        {/* 🔗 Share Button */}
+        <TouchableOpacity onPress={() => onShare(item.title)}>
+          <Text style={styles.shareButton}>🔗</Text>
+        </TouchableOpacity>
+  
+        {/* ❌ Delete Button */}
+        <TouchableOpacity onPress={() => removeTodo(item.id)}>
+          <Text style={styles.deleteButton}>X</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+  
   return (
     <SafeAreaView style={styles.container}>
-      <Text style={styles.title}>📝 To-Do List</Text>
-
+      <Text style={styles.heading}>நடப்பு வேலை பட்டியல்</Text>
       <View style={styles.inputContainer}>
         <TextInput
+          placeholder="வேலை உள்ளீடு செய்யவும்"
+          value={task}
+          onChangeText={setTask}
           style={styles.input}
-          placeholder="Add Task..."
-          value={text}
-          onChangeText={setText}
         />
-        <Button title="Add" onPress={() => {
-          if (text.trim()) {
-            addTask(text);
-            setText('');
-          }
-        }} />
+        <TouchableOpacity onPress={handleAdd} style={styles.addButton}>
+          <Text style={styles.addButtonText}>சேர்க்க</Text>
+        </TouchableOpacity>
       </View>
-
       <FlatList
-        data={tasks}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <View style={styles.taskContainer}>
-            <TouchableOpacity onPress={() => toggleTask(item.id)}>
-              <Text style={[styles.taskText, item.completed && styles.completed]}>
-                {item.title}
-              </Text>
-            </TouchableOpacity>
-            <Button title="🗑" onPress={() => deleteTask(item.id)} />
-          </View>
-        )}
+        data={todos}
+        keyExtractor={(item) => item.id.toString()}
+        renderItem={renderItem}
+        contentContainerStyle={styles.list}
       />
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: '#fff' },
-  title: { fontSize: 24, fontWeight: 'bold', marginBottom: 20 },
-  inputContainer: { flexDirection: 'row', marginBottom: 20 },
-  input: { flex: 1, borderWidth: 1, borderColor: '#ccc', marginRight: 10, paddingHorizontal: 10, borderRadius: 8 },
-  taskContainer: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
-  taskText: { fontSize: 18 },
-  completed: { textDecorationLine: 'line-through', color: 'gray' },
+  container: {
+    flex: 1,
+    backgroundColor: '#ADD8E6', // Light blue background
+    padding: 20,
+  },
+  title: {
+    fontSize: 30,
+    fontWeight: 'bold',
+    color: '#FFFFFF', // White color title
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  sectionTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#1E293B', // Dark navy color for section titles
+    marginBottom: 15,
+    marginTop: 10,
+  },
+  inputLabel: {
+    fontSize: 16,
+    color: '#2B6CB0', // Blue color label before input
+    marginBottom: 8,
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    marginBottom: 25,
+    alignItems: 'center',
+  },
+  input: {
+    flex: 1,
+    backgroundColor: '#FFFFFF', // White input box
+    borderColor: '#E5E7EB',
+    borderWidth: 1,
+    padding: 14,
+    borderRadius: 12,
+    fontSize: 16,
+    color: '#333333', // Dark text in input box
+  },
+  addButton: {
+    backgroundColor: '#32CD32', // Lime green add button
+    paddingVertical: 12,
+    paddingHorizontal: 18,
+    borderRadius: 12,
+    marginLeft: 12,
+    elevation: 5,
+  },
+  addButtonText: {
+    color: '#FFFFFF', // White text on the add button
+    fontWeight: 'bold',
+    fontSize: 18,
+    textAlign: 'center',
+  },
+  taskRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF', // White task row background
+    padding: 16,
+    marginBottom: 14,
+    borderRadius: 14,
+    shadowColor: '#000000',
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 3 },
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  taskText: {
+    flex: 1,
+    fontSize: 18,
+    color: '#1E293B', // Dark text color for tasks
+  },
+  completed: {
+    textDecorationLine: 'line-through',
+    color: '#808080', // Gray for completed tasks
+  },
+  deleteButton: {
+    marginLeft: 15,
+    backgroundColor: '#DC143C', // Crimson red delete button
+    padding: 10,
+    borderRadius: 10,
+  },
+  deleteText: {
+    color: '#FFFFFF', // White text for delete button
+    fontSize: 18,
+    textAlign: 'center',
+  },
+  checkbox: {
+    fontSize: 22,
+    marginRight: 12,
+    color: '#32CD32', // Green color checkbox
+  },
 });
+
+
+
+
+
+
+
+
+
+
+
+
+const onShare = async (taskText: string) => {
+  try {
+    await Share.share({
+      message: `Task: ${taskText}`,
+    });
+  } catch (error) {
+    console.error('Error sharing task:', error);
+  }
+};
+
+
 
 export default App;
