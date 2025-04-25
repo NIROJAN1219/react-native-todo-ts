@@ -5,25 +5,27 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 type Todo = {
   id: number;
   title: string;
+  description: string;
   completed: boolean;
 };
 
 type TodoState = {
   todos: Todo[];
-  addTodo: (title: string) => void;
+  addTodo: (title: string, description: string) => void;
   removeTodo: (id: number) => void;
   toggleTodo: (id: number) => void;
+  editTodo: (id: number, title: string, description: string) => void;
 };
 
 export const useTodoStore = create<TodoState>()(
   persist(
     (set) => ({
       todos: [],
-      addTodo: (title) =>
+      addTodo: (title, description) =>
         set((state) => ({
           todos: [
             ...state.todos,
-            { id: Date.now(), title, completed: false },
+            { id: Date.now(), title, description, completed: false },
           ],
         })),
       removeTodo: (id) =>
@@ -33,9 +35,13 @@ export const useTodoStore = create<TodoState>()(
       toggleTodo: (id) =>
         set((state) => ({
           todos: state.todos.map((todo) =>
-            todo.id === id
-              ? { ...todo, completed: !todo.completed }
-              : todo
+            todo.id === id ? { ...todo, completed: !todo.completed } : todo
+          ),
+        })),
+      editTodo: (id, title, description) =>
+        set((state) => ({
+          todos: state.todos.map((todo) =>
+            todo.id === id ? { ...todo, title, description } : todo
           ),
         })),
     }),
