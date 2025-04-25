@@ -60,25 +60,6 @@ npx react-native run-ios
 
 ---
 
-## 📁 Folder Structure
-
-```
-project-root/
-├── src/
-│   ├── components/
-│   │   └── TaskItem.tsx
-│   ├── screens/
-│   │   └── HomeScreen.tsx
-│   ├── store/
-│   │   └── useTaskStore.ts
-│   ├── types/
-│   │   └── Task.ts
-│   ├── images/
-│       └── [PNG icons used in UI]
-├── App.tsx
-├── package.json
-└── README.md
-
 
 ## 📦 Technologies Used
 
@@ -87,5 +68,4 @@ project-root/
 - Zustand (state management)
 - AsyncStorage (persistent storage)
 - React Native Modal & Touchable components
-- PNG-based icons for actions
 - Material UI-inspired custom styles
