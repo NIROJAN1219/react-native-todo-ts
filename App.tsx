@@ -7,199 +7,203 @@ import {
   TouchableOpacity,
   FlatList,
   StyleSheet,
+  Modal,
+  Alert,
+  Share,
 } from 'react-native';
 import { useTodoStore } from './src/store';
-import { Share } from 'react-native';
 
 const App = () => {
-  const [task, setTask] = useState('');
-  const { todos, addTodo, removeTodo, toggleTodo } = useTodoStore();
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [editTaskId, setEditTaskId] = useState<number | null>(null);
+  const [editTitle, setEditTitle] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [modalVisible, setModalVisible] = useState(false);
+
+  const { todos, addTodo, removeTodo, toggleTodo, editTodo } = useTodoStore();
 
   const handleAdd = () => {
-    if (task.trim()) {
-      addTodo(task);
-      setTask('');
+    if (title.trim() && description.trim()) {
+      addTodo(title, description);
+      setTitle('');
+      setDescription('');
     }
   };
-
-  
 
   const onShare = async (taskText: string) => {
     try {
       await Share.share({
-        message: `Task: ${taskText}`,
+        message: Task: ${taskText},
       });
     } catch (error) {
       console.error('Error sharing task:', error);
     }
   };
-  
+
+  const handleEdit = (item: any) => {
+    setEditTaskId(item.id);
+    setEditTitle(item.title);
+    setEditDescription(item.description);
+    setModalVisible(true);
+  };
+
+  const saveEdit = () => {
+    if (editTaskId !== null) {
+      editTodo(editTaskId, editTitle, editDescription);
+      setModalVisible(false);
+      setEditTaskId(null);
+      setEditTitle('');
+      setEditDescription('');
+    }
+  };
+
+  const confirmDelete = (id: number) => {
+    Alert.alert('Delete Task', 'Are you sure you want to delete this task?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Yes', onPress: () => removeTodo(id) },
+    ]);
+  };
+
   const renderItem = ({ item }: any) => (
     <View style={styles.taskContainer}>
-      <TouchableOpacity onPress={() => toggleTodo(item.id)}>
-        <Text
-          style={[
-            styles.taskText,
-            item.completed && styles.completed,
-          ]}
-        >
+      <TouchableOpacity onPress={() => toggleTodo(item.id)} style={{ flex: 1 }}>
+        <Text style={[styles.taskText, item.completed && styles.completed]}>
           {item.title}
         </Text>
+        <Text style={[styles.descriptionText, item.completed && styles.completed]}>
+          {item.description}
+        </Text>
       </TouchableOpacity>
-  
-      <View style={{ flexDirection: 'row' }}>
-        {/* 🔗 Share Button */}
+
+      <View style={styles.buttonGroup}>
         <TouchableOpacity onPress={() => onShare(item.title)}>
           <Text style={styles.shareButton}>🔗</Text>
         </TouchableOpacity>
-  
-        {/* ❌ Delete Button */}
-        <TouchableOpacity onPress={() => removeTodo(item.id)}>
-          <Text style={styles.deleteButton}>X</Text>
+
+        <TouchableOpacity onPress={() => handleEdit(item)}>
+          <Text style={styles.editButton}>✏</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity onPress={() => confirmDelete(item.id)}>
+          <Text style={styles.deleteButton}>❌</Text>
         </TouchableOpacity>
       </View>
     </View>
   );
-  
+
   return (
     <SafeAreaView style={styles.container}>
-      <Text style={styles.heading}>நடப்பு வேலை பட்டியல்</Text>
+      <Text style={styles.heading}>To-Do List</Text>
+
       <View style={styles.inputContainer}>
         <TextInput
-          placeholder="வேலை உள்ளீடு செய்யவும்"
-          value={task}
-          onChangeText={setTask}
+          placeholder="Title"
+          value={title}
+          onChangeText={setTitle}
+          style={styles.input}
+        />
+        <TextInput
+          placeholder="Description"
+          value={description}
+          onChangeText={setDescription}
           style={styles.input}
         />
         <TouchableOpacity onPress={handleAdd} style={styles.addButton}>
-          <Text style={styles.addButtonText}>சேர்க்க</Text>
+          <Text style={styles.addButtonText}>Add Task</Text>
         </TouchableOpacity>
       </View>
+
       <FlatList
         data={todos}
         keyExtractor={(item) => item.id.toString()}
         renderItem={renderItem}
         contentContainerStyle={styles.list}
       />
+
+      <Modal visible={modalVisible} transparent animationType="slide">
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Edit Task</Text>
+            <TextInput
+              placeholder="Edit Title"
+              value={editTitle}
+              onChangeText={setEditTitle}
+              style={styles.input}
+            />
+            <TextInput
+              placeholder="Edit Description"
+              value={editDescription}
+              onChangeText={setEditDescription}
+              style={styles.input}
+            />
+            <TouchableOpacity onPress={saveEdit} style={styles.addButton}>
+              <Text style={styles.addButtonText}>Save Changes</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => setModalVisible(false)}>
+              <Text style={styles.cancelText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#ADD8E6', // Light blue background
-    padding: 20,
-  },
-  title: {
-    fontSize: 30,
-    fontWeight: 'bold',
-    color: '#FFFFFF', // White color title
-    marginBottom: 10,
-    textAlign: 'center',
-  },
-  sectionTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#1E293B', // Dark navy color for section titles
-    marginBottom: 15,
-    marginTop: 10,
-  },
-  inputLabel: {
-    fontSize: 16,
-    color: '#2B6CB0', // Blue color label before input
-    marginBottom: 8,
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    marginBottom: 25,
-    alignItems: 'center',
-  },
+  container: { flex: 1, backgroundColor: '#E0F7FA', padding: 20 },
+  heading: { fontSize: 24, fontWeight: 'bold', textAlign: 'center', marginBottom: 20 },
+  inputContainer: { marginBottom: 20 },
   input: {
-    flex: 1,
-    backgroundColor: '#FFFFFF', // White input box
-    borderColor: '#E5E7EB',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    padding: 14,
-    borderRadius: 12,
+    borderColor: '#90CAF9',
+    borderRadius: 10,
+    padding: 12,
     fontSize: 16,
-    color: '#333333', // Dark text in input box
+    marginBottom: 10,
   },
   addButton: {
-    backgroundColor: '#32CD32', // Lime green add button
-    paddingVertical: 12,
-    paddingHorizontal: 18,
+    backgroundColor: '#00796B',
+    padding: 12,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  addButtonText: { color: '#FFFFFF', fontWeight: 'bold', fontSize: 16 },
+  list: { paddingBottom: 20 },
+  taskContainer: {
+    backgroundColor: '#FFFFFF',
+    padding: 15,
+    marginBottom: 10,
     borderRadius: 12,
-    marginLeft: 12,
-    elevation: 5,
-  },
-  addButtonText: {
-    color: '#FFFFFF', // White text on the add button
-    fontWeight: 'bold',
-    fontSize: 18,
-    textAlign: 'center',
-  },
-  taskRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF', // White task row background
-    padding: 16,
-    marginBottom: 14,
-    borderRadius: 14,
-    shadowColor: '#000000',
-    shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: 3 },
-    shadowRadius: 4,
-    elevation: 2,
   },
-  taskText: {
+  taskText: { fontSize: 18, fontWeight: 'bold' },
+  descriptionText: { fontSize: 14, color: '#555' },
+  completed: { textDecorationLine: 'line-through', color: '#999' },
+  buttonGroup: { flexDirection: 'row', marginLeft: 10 },
+  deleteButton: { marginLeft: 10, fontSize: 18, color: '#C62828' },
+  editButton: { marginLeft: 10, fontSize: 18, color: '#FFA000' },
+  shareButton: { fontSize: 18, color: '#1976D2' },
+  modalContainer: {
     flex: 1,
-    fontSize: 18,
-    color: '#1E293B', // Dark text color for tasks
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    padding: 20,
   },
-  completed: {
-    textDecorationLine: 'line-through',
-    color: '#808080', // Gray for completed tasks
+  modalContent: {
+    backgroundColor: '#FFFFFF',
+    padding: 20,
+    borderRadius: 12,
   },
-  deleteButton: {
-    marginLeft: 15,
-    backgroundColor: '#DC143C', // Crimson red delete button
-    padding: 10,
-    borderRadius: 10,
-  },
-  deleteText: {
-    color: '#FFFFFF', // White text for delete button
-    fontSize: 18,
+  modalTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 10 },
+  cancelText: {
+    color: '#1976D2',
     textAlign: 'center',
-  },
-  checkbox: {
-    fontSize: 22,
-    marginRight: 12,
-    color: '#32CD32', // Green color checkbox
+    marginTop: 10,
+    fontWeight: 'bold',
   },
 });
-
-
-
-
-
-
-
-
-
-
-
-
-const onShare = async (taskText: string) => {
-  try {
-    await Share.share({
-      message: `Task: ${taskText}`,
-    });
-  } catch (error) {
-    console.error('Error sharing task:', error);
-  }
-};
-
-
 
 export default App;
